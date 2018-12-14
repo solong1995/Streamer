@@ -131,12 +131,6 @@ decompType = regular
 <EmField myEsField>
 
 kind = yeeStaticEmField
-gridBoundary=electrode
-<STFunc boundaryFunc>
-kind = expression
-expression = -VOLTAGE
- #*envelope(t)
-</STFunc>
 <Solver mysolver>
 	
 kind = gmres
@@ -180,27 +174,23 @@ dumpPotential = true
 # in the SumRhoJ field. This is pretty ugly, but for the time
 # being this is the way things are.
 
-<BoundaryCondition leftWall>
+<BoundaryCondition cathode>
 kind = dirichlet
 lowerBounds = [0   0   0]
 upperBounds = [1  NY NZ]
 <STFunc function>
 kind = expression
-expression=-VOLTAGE*envelope(t)
-#expression = -VOLTAGE*(1.-(y-PINWIDTH*0.5)/(LY/2-PINWIDTH*0.5))*H(y-PINWIDTH*0.5)\
-#-VOLTAGE*(1.-(-PINWIDTH*0.5-y)/(-PINWIDTH*0.5+LY/2))*H(-PINWIDTH*0.5-y)\
-#-VOLTAGE*H(PINWIDTH*0.5-y)*H(y+PINWIDTH*0.5)
+expression=-VOLTAGE
 </STFunc>
 </BoundaryCondition>
 
-<BoundaryCondition rightWall>
+<BoundaryCondition anode>
 kind = dirichlet
 lowerBounds = [NXM   0   0]
 upperBounds = [NX  NY  NZ]
-maxApplyTime = 10.
 <STFunc function>
-kind = constantFunc
-amplitude = 0.
+kind = expression
+expression = 0.
 </STFunc>
 </BoundaryCondition>
 
@@ -208,10 +198,9 @@ amplitude = 0.
 kind = dirichlet
 lowerBounds = [0   0   0]
 upperBounds = [NX  1  NZ]
-maxApplyTime = 10.
 <STFunc function>
 kind = expression
-expression=-VOLTAGE*(LX-x)/LX*envelope(t)
+expression=-VOLTAGE*(LX-x)/LX
 </STFunc>
 </BoundaryCondition>
 
@@ -219,10 +208,9 @@ expression=-VOLTAGE*(LX-x)/LX*envelope(t)
 kind = dirichlet
 lowerBounds = [0   NYM   0]
 upperBounds = [NX  NY  NZ]
-maxApplyTime = 10.
 <STFunc function>
 kind = expression
-expression =-VOLTAGE*(LX-x)/LX*envelope(t)
+expression =-VOLTAGE*(LX-x)/LX
 </STFunc>
 </BoundaryCondition>
 
@@ -230,27 +218,24 @@ expression =-VOLTAGE*(LX-x)/LX*envelope(t)
 kind = dirichlet
 lowerBounds = [0   0   0]
 upperBounds = [NX  NY  1]
-maxApplyTime = 10.
 <STFunc function>
 kind = expression
-expression =-VOLTAGE*(LX-x)/LX*envelope(t)
-
+expression =-VOLTAGE*(LX-x)/LX
 </STFunc>
 </BoundaryCondition>
+
 <BoundaryCondition topWall>
 kind = dirichlet
 lowerBounds = [0   0   NZM]
 upperBounds = [NX  NY  NZ]
-maxApplyTime = 10.
 <STFunc function>
 kind = expression
-expression =-VOLTAGE*(LX-x)/LX*envelope(t)
+expression =-VOLTAGE*(LX-x)/LX
 </STFunc>
 </BoundaryCondition>
-
 </EmField>
-<Species electrons>
 
+<Species electrons>
 kind = relBorisVW
 charge = ELEC_CHARGE
 mass = ELEC_MASS
