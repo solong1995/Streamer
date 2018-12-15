@@ -1,558 +1,257 @@
-######################################################################
-#
-# description This input file demonstrates one of the electrostatic solvers
-#             in VORPAL combined with particles. It sets up a hollow cathode 
-#             geometry (at fixed potentials) and loads electrons into the
-#             cathode. A list of the different parameters for controlling
-#             the solver is provided.
-#
-# Copyright &copy; 1999-2002, University of Colorado
-# Copyright &copy; 2002-2010, University of Colorado and
-#                             Tech-X Corporation
-# See VORPAL LICENSE file for conditions of use.
-#
-######################################################################
-
-# The following two variables determine the basic object
-$ import absorbingBox
-$NX=55
-$NY=70
-$NZ=70
-$LX=0.05
-$LY=0.04
-$LZ=0.04
+$import absorbingBox
+$NX=25
+$NY=20
+$NZ=20
+$LX=0.005
+$LY=0.004
+$LZ=0.004
 $XSTART=0.
 $YSTART=-LY/2.
 $ZSTART=-LZ/2.
 $XEND=XSTART+LX
 $YEND=YSTART+LY
 $ZEND=ZSTART+LZ
-$PINWIDTH=4e-3
-$PINTHICK=4e-3
-$PINLENGTH=2e-2
-$PANELTHICK=1e-2
-$PANELHEIGHT=1e-2
-$PANELWIDTHY=1e-2
-$PANELWIDTHZ=1e-2
-$SEEDLENGTH=1.e-3
 $NX1=NX+1
 $NY1=NY+1
 $NZ1=NZ+1
 $NXM=NX-1
 $NYM=NY-1
 $NZM=NZ-1
-$VOLTAGE=1500.
-$ ELEC_MASS = 9.109e-31
-$ FUNDCHARGE = 1.6022e-19
-$ ELEC_CHARGE = -1.*FUNDCHARGE
+$VOLTAGE=100000.
+$ELEC_MASS = 9.109e-31
+$FUNDCHARGE = 1.6022e-19
+$ELEC_CHARGE = -1.*FUNDCHARGE
 $ATOM_MASS_UNIT=1.667e-27
 $MASSN2=ATOM_MASS_UNIT*28.013
-$SEEDDENSITY=1e9
-$NOMDEN=1e9
-$PTCLPERCELL=500.
-$OMEGAP=56.4*sqrt(NOMDEN)
+$NOMDEN=1.e14
+$PTCLPERCELL=1.
 $DT=5.e-12
-$OMEGA=0.05*OMEGAP
-$GASDENSITY=2.6e24
-$START_TIME=1e-10
-$RAMP_TIME=1.e-8
+$GASDENSITY=2.6e26
 $MATERIAL='stainless'
 $DMFRAC=0.4
 
 
-downShiftDir=-1
+#downShiftDir=-1
 dimension = 3
 floattype = double
-<function envelope(t)>
-H(t-START_TIME)*H(RAMP_TIME+START_TIME-t)*t/(RAMP_TIME+START_TIME)+H(t-START_TIME-RAMP_TIME)
-</function>
-# Parse in the grid
+
+
+<GridBoundary GridNode>
+  kind = funcGridBndry
+  dmFrac = 0.4
+  <STFunc function>
+    kind=expression
+    expression=H(x)
+  </STFunc>
+</GridBoundary>
+
 <Grid compGrid>
-
-# add explicitly the conductors at the domain boundary in order to
-# set them via Dirichlet boundary conditions.
-
-numCells   = [ NX      NY      NZ]
-lengths        = [LX   LY   LZ]
-startPositions = [XSTART YSTART ZSTART]
+  kind=uniCartGrid
+  numCells = [NX NY NZ]
+  lengths = [LX LY LZ]
+  startPositions = [XSTART YSTART ZSTART]
 </Grid>
 
+
 dumpPeriodicity = 500
-dt = DT	# For small step in electron plasma period
-nsteps =5000	# For testing
+dt = DT 
+nsteps =5000
 
 
-
-<GridBoundary electrode>
-kind=rgnGridBndry
-calculateVolume = true
-dmFrac=DMFRAC
-<STRgn region>
-kind=stFuncRgn
-<STFunc function>
-kind=expression
-expression=0.8-H(x)*H(PINLENGTH-x)*H(y+0.5*PINWIDTH)*H(0.5*PINWIDTH-y)*H(z+0.5*PINWIDTH)*H(0.5*PINWIDTH-z)
-#expression=0.6-H(x)*H(PINLENGTH-x)*H(PINWIDTH*PINWIDTH*0.25-(y*y+z*z))
-#expression=0.6-H(x)*H(PINLENGTH-x)*H(PINWIDTH*PINWIDTH*0.25-y*y)
-</STFunc>
-</STRgn>
-</GridBoundary>
-<GridBoundary cathnode>
-kind=rgnGridBndry
-calculateVolume = true
-dmFrac=DMFRAC
-<STRgn region>
-kind=stFuncRgn
-<STFunc function>
-kind=expression
-expression=1.-H(x)*H(PINLENGTH-x)*H(y+0.5*PINWIDTH)*H(0.5*PINWIDTH-y)*H(z+0.5*PINWIDTH)*H(0.5*PINWIDTH-z)
-#expression=0.6-H(x)*H(PINLENGTH-x)*H(PINWIDTH*PINWIDTH*0.25-(y*y+z*z))
-#expression=0.6-H(x)*H(PINLENGTH-x)*H(PINWIDTH*PINWIDTH*0.25-y*y)
-</STFunc>
-</STRgn>
-</GridBoundary>
-<GridBoundary seedemit>
-kind=funcGridBndry
-calculateVolume = true
-dmFrac=DMFRAC
-<STFunc function>
-kind=expression
-expression=1.5
-</STFunc>
-
-</GridBoundary>
-
-# Parse in the grid
 <Decomp decomp>
-#
-decompType = regular
+  decompType = regular
 </Decomp>
 
+
 <EmField myEsField>
+  kind = yeeStaticEmField
+  <Solver mysolver>
+    kind = gmres
+    precond=multigrid
+    smoother = GaussSeidel
+    nLevels = 5
+    tolerance = 1e-8
+    maxIter = 1000
+    output = last
+    dumpPotential = true
+  </Solver>
 
-kind = yeeStaticEmField
-<Solver mysolver>
-	
-kind = gmres
-#getPrevStep = True
-precond=multigrid
-#precond = multigrid
-# Other choices for preconditioners are:
-# none, Jacobi, Neumann, ls, dom_decomp
-#
-# The following options are only valid if ML is
-# installed:
-#precond = multigrid
-smoother = GaussSeidel
-# Other choices for smoothers are:
-# VBlockSymGaussSeidel, Jacobi
-#
-# Number of grid levels
-nLevels = 5
-# threshold for refinement
-#threshold = 1e-8
-#-- end of ML specific options
-#--
+  <BoundaryCondition cathode>
+    kind = dirichlet
+    lowerBounds = [0   0   0]
+    upperBounds = [1  NY NZ]
+    <STFunc function>
+      kind = expression
+      expression=-VOLTAGE
+    </STFunc>
+  </BoundaryCondition>
 
-# convergence criterium:
-tolerance = 1e-8
+  <BoundaryCondition anode>
+    kind = dirichlet
+    lowerBounds = [NXM   0   0]
+    upperBounds = [NX  NY  NZ]
+    <STFunc function>
+      kind = expression
+      expression = 0.
+    </STFunc>
+  </BoundaryCondition>
 
-# maximum number of iterations
-maxIter = 1000
+  <BoundaryCondition bottom>
+    kind = dirichlet
+    lowerBounds = [1   0   0]
+    upperBounds = [NX  1  NZ]
+    <STFunc function>
+      kind = expression
+      expression=-VOLTAGE*(LX-x)/LX
+    </STFunc>
+  </BoundaryCondition>
 
-# verbosity of the solver
-output = last
-# Other choices for output are:
-# none, all, warnings, last, 1, 2, 3, ...
+  <BoundaryCondition top>
+    kind = dirichlet
+    lowerBounds = [0   NYM   0]
+    upperBounds = [NX  NY  NZ]
+    <STFunc function>
+      kind = expression
+      expression =-VOLTAGE*(LX-x)/LX
+    </STFunc>
+  </BoundaryCondition>
 
-# if the following is set to true, the potential is
-# written into separate file.
-dumpPotential = true
-</Solver>
+  <BoundaryCondition front>
+    kind = dirichlet
+    lowerBounds = [0   0   0]
+    upperBounds = [NX  NY  1]
+    <STFunc function>
+      kind = expression
+      expression =-VOLTAGE*(LX-x)/LX
+    </STFunc>
+  </BoundaryCondition>
 
-# boundary conditions for the ES solver have to be specified
-# in the SumRhoJ field. This is pretty ugly, but for the time
-# being this is the way things are.
-
-<BoundaryCondition cathode>
-kind = dirichlet
-lowerBounds = [0   0   0]
-upperBounds = [1  NY NZ]
-<STFunc function>
-kind = expression
-expression=-VOLTAGE
-</STFunc>
-</BoundaryCondition>
-
-<BoundaryCondition anode>
-kind = dirichlet
-lowerBounds = [NXM   0   0]
-upperBounds = [NX  NY  NZ]
-<STFunc function>
-kind = expression
-expression = 0.
-</STFunc>
-</BoundaryCondition>
-
-<BoundaryCondition bottomWall>
-kind = dirichlet
-lowerBounds = [0   0   0]
-upperBounds = [NX  1  NZ]
-<STFunc function>
-kind = expression
-expression=-VOLTAGE*(LX-x)/LX
-</STFunc>
-</BoundaryCondition>
-
-<BoundaryCondition topWall>
-kind = dirichlet
-lowerBounds = [0   NYM   0]
-upperBounds = [NX  NY  NZ]
-<STFunc function>
-kind = expression
-expression =-VOLTAGE*(LX-x)/LX
-</STFunc>
-</BoundaryCondition>
-
-<BoundaryCondition bottomWall>
-kind = dirichlet
-lowerBounds = [0   0   0]
-upperBounds = [NX  NY  1]
-<STFunc function>
-kind = expression
-expression =-VOLTAGE*(LX-x)/LX
-</STFunc>
-</BoundaryCondition>
-
-<BoundaryCondition topWall>
-kind = dirichlet
-lowerBounds = [0   0   NZM]
-upperBounds = [NX  NY  NZ]
-<STFunc function>
-kind = expression
-expression =-VOLTAGE*(LX-x)/LX
-</STFunc>
-</BoundaryCondition>
+  <BoundaryCondition back>
+  kind = dirichlet
+  lowerBounds = [0   0   NZM]
+  upperBounds = [NX  NY  NZ]
+    <STFunc function>
+      kind = expression
+      expression =-VOLTAGE*(LX-x)/LX
+    </STFunc>
+  </BoundaryCondition>
 </EmField>
 
 <Species electrons>
-kind = relBorisVW
-charge = ELEC_CHARGE
-mass = ELEC_MASS
-emField = myEsField
-nominalDensity = NOMDEN
-nomPtclsPerCell = PTCLPERCELL
-maxcellxing = 1
-<ParticleSource SeedSrc>
-kind = xvLoaderEmitter
-emit = true
-load = false
-<PositionGenerator seedGen>
- kind=cutCellPosGen
- emitterBoundary = electrode
- emissionOffset = 0.1
- numMacroPtclsPerStep = 1
- </PositionGenerator>
- <STFunc relMacroFluxFunc>
-kind = expression
-expression=H(x-PINLENGTH+0.0001) #*H(y+0.5*PINWIDTH)*H(0.5*PINWIDTH-y))
-</STFunc>
-<VelocityGenerator myvel>
-   kind=beamVelocityGen
-	 vbar=[0. 0. 0. 1.]
-	 vsig=[1.e6 1.e6 1.e6 0.]
-</VelocityGenerator>
+  kind = relBorisVW
+  charge = ELEC_CHARGE
+  mass = ELEC_MASS
+  emField = myEsField
+  nominalDensity = NOMDEN
+  nomPtclsPerCell = PTCLPERCELL
+  maxcellxing = 1
 
-</ParticleSource>
-<ParticleSink eleftAbsorber>
-kind = absorber
-minDim = 1
-lowerBounds = [-1  -1  -1]
-upperBounds = [ 1   NY1  NZ1]
-</ParticleSink>
+  <ParticleSource SeedSrc>
+    kind = xvLoaderEmitter
+    emit = false
+    load = true
+    loadOnShift = false
+    loadAfterInit = false
+    <PositionGenerator gridSlab>
+      kind = bitRevSlabPosGen
+      <Slab loadSlab>
+        lowerBounds = [XSTART -0.0002 -0.0002]
+        upperBounds = [0.0002 0.0002 0.0002]
+      </Slab>
+      ptclsPerCell=1.
+    </PositionGenerator>
+  
+    <VelocityGenerator emitVelGen>
+      kind = funcVelGen
+      velocityIsLocal = true
+      <STFunc component0>
+        kind = expression
+        expression = 0.
+      </STFunc>
+      <STFunc component1>
+        kind = expression
+       expression = 0.
+      </STFunc>
+      <STFunc component2>
+        kind = expression
+       expression = 0.
+      </STFunc>
+    </VelocityGenerator>
+  </ParticleSource>
 
-<ParticleSink erightAbsorber>
-kind = absAndSav
-minDim = 1
-lowerBounds = [ NXM  -1 -1]
-upperBounds = [ NX  NY1  NZ1]
-</ParticleSink>
-
-<ParticleSink efrontAbsorber>
-kind = absorber
-minDim = 2
-lowerBounds = [ -1 -1  -1]
-upperBounds = [NX1  0 NZ1]
-</ParticleSink>
-
-<ParticleSink ebackAbsorber>
-kind = absorber
-minDim = 2
-lowerBounds = [ -1  NY  -1]
-upperBounds = [NX1  NY1  NZ1]
-</ParticleSink>
-
-<ParticleSink ebottomAbsorber>
-kind = absorber
-minDim = 3
-lowerBounds = [ -1  -1 -1]
-upperBounds = [NX1 NY1  0]
-</ParticleSink>
-
-<ParticleSink etopAbsorber>
-kind = absorber
-minDim = 3
-lowerBounds = [ -1  -1  NZ]
-upperBounds = [NX1 NY1  NZ1]
-</ParticleSink>
- <ParticleSink ecutcellBndrymetal>
-      kind = absSavCutCell
-      #kind = cutCellBndryPtclAbsorber
-      gridBoundary = cathnode
-      lowerBounds = [ -1  -1  -1]
-      upperBounds = [ NX1 NY1 NZ1]
-  </ParticleSink>
-		<ParticleSink semyZeroWgtAbsorber>
-kind = zeroWgtAbsorber
-minDim = 1
-lowerBounds = [0 0 0]
-upperBounds = [NX NY NZ]
-</ParticleSink>
-# The secondary electron emitter, tied to the left-hand absorber
-#<ParticleSource erightSecondaryEmitter>
-#kind = secElec
-#minDim = 1
-#ptclAbsorber = erightAbsorber
-# The 'direction' vector should point along the
-# *outward-facing* normal...be sure to check this!
-#direction = [-1. 0. 0.]
-#material = copper
-# secondarySpecies = SecondaryElectrons
-#</ParticleSource>
-<ParticleSource epinSecondaryEmitter>
-kind = secElec
-minDim = 1
-ptclAbsorber = ecutcellBndrymetal
-gridBoundary=cathnode
-# The 'direction' vector should point along the
-# *outward-facing* normal...be sure to check this!
-direction = [-1. 0. 0.]
-material = MATERIAL
- secondarySpecies = SecondaryElectrons
-</ParticleSource>
-absoringBox(NX,NY,NZ)
+  absoringBox(NX,NY,NZ)
 </Species>
+
 <Species N2ion>
-loadAfterInit=true
-kind = relBorisVW
-charge = FUNDCHARGE
-mass = MASSN2
-emField = myEsField
-nominalDensity = NOMDEN
-nomPtclsPerCell = PTCLPERCELL
-maxcellxing = 1
-
-
-<ParticleSink n2rightAbsorber>
-kind = absAndSav
-minDim = 1
-lowerBounds = [ NXM  -1 -1]
-upperBounds = [ NX  NY1  NZ1]
-</ParticleSink>
- <ParticleSink n2cutcellBndrymetal>
-      kind = absSavCutCell
-      #kind = cutCellBndryPtclAbsorber
-      gridBoundary = cathnode
-      lowerBounds = [ -1  -1  -1]
-      upperBounds = [ NX1 NY1 NZ1]
-    </ParticleSink>
-
-<ParticleSource n2rightSecondaryEmitter>
-kind = secElec
-minDim = 1
-ptclAbsorber = n2rightAbsorber
-# The 'direction' vector should point along the
-# *outward-facing* normal...be sure to check this!
-direction = [-1. 0. 0.]
-material = MATERIAL
- secondarySpecies = SecondaryElectrons
-</ParticleSource>
-<ParticleSource n2pinSecondaryEmitter>
-kind = secElec
-minDim = 1
-ptclAbsorber = n2cutcellBndrymetal
-gridBoundary=cathnode
-# The 'direction' vector should point along the
-# *outward-facing* normal...be sure to check this!
-direction = [1. 0. 0.]
-material = MATERIAL
-secondarySpecies = SecondaryElectrons
-</ParticleSource>
-absorbingBox(NX,NY,NZ)
+  kind = relBorisVW
+  charge = FUNDCHARGE
+  mass = MASSN2
+  emField = myEsField
+  nominalDensity = NOMDEN
+  nomPtclsPerCell = PTCLPERCELL
+  maxcellxing = 1
+  absorbingBox(NX,NY,NZ)
 </Species>
+
+
 <Fluid N2NeutralGas>
   kind = neutralGas
   gasKind = N2
   <InitialCondition constGasDensity>
      lowerBounds = [0 0 0 ]
-		 
      upperBounds = [NX NY NZ]
      kind = constant
      components = [0]
      amplitudes = [GASDENSITY]
   </InitialCondition>
 </Fluid>
-<Species SecondaryElectrons>
 
-kind = relBorisVW
-charge = ELEC_CHARGE
-mass = ELEC_MASS
-emField = myEsField
-nominalDensity = NOMDEN
-nomPtclsPerCell = PTCLPERCELL
-maxcellxing = 1
 
- <ParticleSink secutcellBndrymetal>
-      kind = absSavCutCell
-      #kind = cutCellBndryPtclAbsorber
-      gridBoundary = cathnode
-      lowerBounds = [ -1  -1  -1]
-      upperBounds = [ NX1 NY1 NZ1]
-    </ParticleSink>
-
-#<ParticleSource serightSecondaryEmitter>
-#kind = secElec
-#minDim = 1
-#ptclAbsorber = serightAbsorber
-# The 'direction' vector should point along the
-# *outward-facing* normal...be sure to check this!
-#direction = [-1. 0. 0.]
-#material = copper
-# secondarySpecies = SecondaryElectrons
-#</ParticleSource>
-<ParticleSource sepinSecondaryEmitter>
-kind = secElec
-minDim = 1
-ptclAbsorber = secutcellBndrymetal
-gridBoundary=cathnode
-# The 'direction' vector should point along the
-# *outward-facing* normal...be sure to check this!
-direction = [-1. 0. 0.]
-material = copper
- secondarySpecies = SecondaryElectrons
-</ParticleSource>
-absorbingBox(NX,NY,NZ)
-</Species>
-
-#
-# Ar ionizer using builtIn cross section data from TxPhysics.
-#
 <MonteCarloInteractions impact>
-	<IncidentSelector mySelector>
-		kind=unbiasedSelector
-	</IncidentSelector>
+  <IncidentSelector mySelector>
+    kind=unbiasedSelector
+  </IncidentSelector>
 
  <Interaction electronIonizer>
     kind = impactIonization
     neutralGas = N2NeutralGas
     neutralGasTemp=300.
     impactSpecies = electrons 
-    #leaveIncidentUnchanged = true
     crossSection = functionDefined
-			<OAFunc crossSectionFunc>
-				kind = interpolatedFromFile
-				filename = ionization.dat 
-			</OAFunc>
+      <OAFunc crossSectionFunc>
+        kind = interpolatedFromFile
+        filename = ionization.dat 
+      </OAFunc>
     ionizedElectronSpecies = electrons 
     ionSpecies = N2ion
-		ionizationThreshold=15.581
+    ionizationThreshold=15.581
   </Interaction>
 
-<Interaction electronexcitation1>
+  <Interaction electronexcitation1>
     kind = impactExcitation
-		#isNeutralGasFluid=true
+    #isNeutralGasFluid=true
     neutralGas = N2NeutralGas
     neutralGasTemp=300.
     impactSpecies = electrons 
     crossSection = functionDefined
-	<OAFunc crossSectionFunc>
-	kind = interpolatedFromFile
-	filename = excitation2.dat
-	</OAFunc>
-	excitationThreshold = 14.2
- </Interaction>
-<Interaction elastic>
+      <OAFunc crossSectionFunc>
+        kind = interpolatedFromFile
+        filename = excitation2.dat
+      </OAFunc>
+    excitationThreshold = 14.2
+  </Interaction>
+  <Interaction elastic>
     kind = impactElastic
     neutralGas = N2NeutralGas
     neutralGasTemp=300.
     impactSpecies = electrons 
     crossSection = functionDefined
-	<OAFunc crossSectionFunc>
-	kind = interpolatedFromFile
-	filename = elastic.dat
-	</OAFunc>
-  </Interaction>
-</MonteCarloInteractions>
-
-<MonteCarloInteractions combine>
-	<IncidentSelector mySelector>
-		kind = nullOnlySelector
-	</IncidentSelector>
-	
-	<NullInteraction ElecCombination>
-		kind = nullSelfCombination
-		species = electrons
-		weight_max = 1.e6
-		threshold = 60
-		algorithm_kind = 3
-	</NullInteraction>
-
-	<NullInteraction N2Collision>
-		kind = nullSelfCombination
-		species = N2ion
-		weight_max = 1.e6
-		threshold = 40
-		algorithm_kind = 3
-	</NullInteraction>
-
-	<NullInteraction SECollision>
-		kind = nullSelfCombination
-		species = SecondaryElectrons
-		weight_max = 1.e6
-		threshold = 60
-		algorithm_kind = 3
-	</NullInteraction>
-
+    <OAFunc crossSectionFunc>
+    kind = interpolatedFromFile
+    filename = elastic.dat
+    </OAFunc>
+    </Interaction>
 </MonteCarloInteractions>
 
 
-<History numElectrons>
-kind = speciesNumberOf
-species = electrons
-</History>
-<History echarge>
-kind = speciesNumPhysical
-species = electrons
-</History>
-<History secharge>
-kind = speciesNumPhysical
-species = SecondaryElectrons
-</History>
-<History n2charge>
-kind = speciesNumPhysical
-species = N2ion
-</History>
-<History N2ions>
-kind = speciesNumberOf
-species = N2ion
-</History>
-<History seElectrons>
-kind = speciesNumberOf
-species = SecondaryElectrons
-</History>
 
-<History absHistory>
-  kind = speciesCurrAbs
-  species =N2ion
-  ptclAbsorber=n2cutcellBndrymetal
-</History>
