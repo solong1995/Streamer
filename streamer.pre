@@ -195,6 +195,7 @@ nsteps =5000
   absoringBox(NX,NY,NZ)
 </Species>
 
+
 <Species N2ion>
   kind = relBorisVW
   charge = FUNDCHARGE
@@ -243,20 +244,19 @@ nsteps =5000
     ionSpecies = N2ion
     ionizationThreshold=15.581
   </Interaction>
-
-  <Interaction electronexcitation1>
+<Interaction electronexcitation1>
     kind = impactExcitation
     #isNeutralGasFluid=true
     neutralGas = N2NeutralGas
     neutralGasTemp=300.
     impactSpecies = electrons 
     crossSection = functionDefined
-      <OAFunc crossSectionFunc>
-        kind = interpolatedFromFile
-        filename = excitation2.dat
-      </OAFunc>
-    excitationThreshold = 14.2
-  </Interaction>
+  <OAFunc crossSectionFunc>
+  kind = interpolatedFromFile
+  filename = excitation2.dat
+  </OAFunc>
+  excitationThreshold = 14.2
+ </Interaction>
   <Interaction elastic>
     kind = impactElastic
     neutralGas = N2NeutralGas
@@ -270,15 +270,39 @@ nsteps =5000
     </Interaction>
 </MonteCarloInteractions>
 
+<MonteCarloInteractions combine>
+  <IncidentSelector mySelector>
+    kind=nullOnlySelector
+  </IncidentSelector>
+  
+  <NullInteraction ElecCombination>
+  kind = nullSelfCombination
+  species = electrons
+  weight_max =4.e11
+  threshold = 24000000
+  algorithm_kind = 3
+ </NullInteraction>
+
+  <NullInteraction N2Combination>
+  kind = nullSelfCombination
+  species = N2ion
+  weight_max =4.e11
+  threshold = 24000000  
+  algorithm_kind = 3
+ </NullInteraction>
+</MonteCarloInteractions>
+
 <History electron>
   kind=speciesNumberOf
   species=electrons
 </History>
 
+
 <History N2>
   kind=speciesNumberOf
   species=N2ion
 </History>
+
 
 <History anodeCurrent>
 kind=speciesCurrAbs
