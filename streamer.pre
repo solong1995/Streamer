@@ -25,7 +25,7 @@ $ATOM_MASS_UNIT=1.667e-27
 $MASSN2=ATOM_MASS_UNIT*28.013
 $NOMDEN=1.e14
 $PTCLPERCELL=1.
-$DT=2.e-12
+$DT=8.e-13
 $GASDENSITY=2.6e25
 $MATERIAL='stainless'
 $DMFRAC=0.4
@@ -41,7 +41,16 @@ floattype = double
   dmFrac = 0.4
   <STFunc function>
     kind=expression
-    expression=H(x)
+    expression=H(x)-0.4
+  </STFunc>
+</GridBoundary>
+
+<GridBoundary anode>
+  kind = funcGridBndry
+  dmFrac = 0.4
+  <STFunc function>
+    kind=expression
+    expression=H(0.004875-x)-0.4
   </STFunc>
 </GridBoundary>
 
@@ -142,8 +151,7 @@ nsteps =5000
   charge = ELEC_CHARGE
   mass = ELEC_MASS
   emField = myEsField
-  nominalDensity = NOMDEN
-  nomPtclsPerCell = PTCLPERCELL
+  numPtclsInMacro=200.
   maxcellxing = 1
 
   <ParticleSource SeedSrc>
@@ -155,10 +163,10 @@ nsteps =5000
     <PositionGenerator gridSlab>
       kind = bitRevSlabPosGen
       <Slab loadSlab>
-        lowerBounds = [XSTART -0.0002 -0.0002]
-        upperBounds = [0.0002 0.0002 0.0002]
+        lowerBounds = [XSTART -0.000125 -0.000125]
+        upperBounds = [0.000125 0.000125 0.000125]
       </Slab>
-      ptclsPerCell=1.
+      ptclsPerCell=5.
     </PositionGenerator>
   
     <VelocityGenerator emitVelGen>
@@ -178,7 +186,12 @@ nsteps =5000
       </STFunc>
     </VelocityGenerator>
   </ParticleSource>
-
+<ParticleSink diodeabsorber>
+  kind = absSavCutCell
+  gridBoundary = anode
+  lowerBounds = [ -1 -1 -1 ]
+  upperBounds = [NX1 NY1 NZ1]
+</ParticleSink>
   absoringBox(NX,NY,NZ)
 </Species>
 
@@ -187,12 +200,16 @@ nsteps =5000
   charge = FUNDCHARGE
   mass = MASSN2
   emField = myEsField
-  nominalDensity = NOMDEN
-  nomPtclsPerCell = PTCLPERCELL
+  numPtclsInMacro=200.
   maxcellxing = 1
+  <ParticleSink dioden2absorber>
+  kind = absSavCutCell
+  gridBoundary = anode
+  lowerBounds = [ -1 -1 -1 ]
+  upperBounds = [NX1 NY1 NZ1]
+</ParticleSink>
   absorbingBox(NX,NY,NZ)
 </Species>
-
 
 <Fluid N2NeutralGas>
   kind = neutralGas
@@ -252,6 +269,22 @@ nsteps =5000
     </OAFunc>
     </Interaction>
 </MonteCarloInteractions>
+
+<History electron>
+  kind=speciesNumberOf
+  species=electrons
+</History>
+
+<History N2>
+  kind=speciesNumberOf
+  species=N2ion
+</History>
+
+<History anodeCurrent>
+kind=speciesCurrAbs
+species= electrons
+ptclAbsorbers= anode
+</History>
 
 
 
