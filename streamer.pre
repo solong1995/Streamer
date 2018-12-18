@@ -286,7 +286,7 @@ nsteps =5000
   kind = nullSelfCombination
   species = electrons
   weight_max =4.e11
-  threshold = 240000
+  threshold = 40000
   algorithm_kind = 3
  </NullInteraction>
 
@@ -294,7 +294,7 @@ nsteps =5000
   kind = nullSelfCombination
   species = N2ion
   weight_max =4.e11
-  threshold = 240000  
+  threshold = 40000  
   algorithm_kind = 3
  </NullInteraction>
 </MonteCarloInteractions>
