@@ -146,6 +146,7 @@ nsteps =5000
   </BoundaryCondition>
 </EmField>
 
+
 <Species electrons>
   kind = relBorisVW
   charge = ELEC_CHARGE
@@ -184,14 +185,20 @@ nsteps =5000
         kind = expression
        expression = 0.
       </STFunc>
+      <STFunc component3>
+        kind = expression
+       expression = 200.
+      </STFunc>
     </VelocityGenerator>
   </ParticleSource>
+
 <ParticleSink diodeabsorber>
   kind = absSavCutCell
   gridBoundary = anode
   lowerBounds = [ -1 -1 -1 ]
   upperBounds = [NX1 NY1 NZ1]
 </ParticleSink>
+
   absoringBox(NX,NY,NZ)
 </Species>
 
@@ -279,7 +286,7 @@ nsteps =5000
   kind = nullSelfCombination
   species = electrons
   weight_max =4.e11
-  threshold = 24000000
+  threshold = 240000
   algorithm_kind = 3
  </NullInteraction>
 
@@ -287,7 +294,7 @@ nsteps =5000
   kind = nullSelfCombination
   species = N2ion
   weight_max =4.e11
-  threshold = 24000000  
+  threshold = 240000  
   algorithm_kind = 3
  </NullInteraction>
 </MonteCarloInteractions>
@@ -297,17 +304,25 @@ nsteps =5000
   species=electrons
 </History>
 
+<History chargeelectron>
+  kind=speciesNumPhysical
+  species=electrons
+</History>
 
 <History N2>
   kind=speciesNumberOf
   species=N2ion
 </History>
 
+<History chargeN2>
+  kind=speciesNumPhysical
+  species=N2ion
+</History>
 
 <History anodeCurrent>
 kind=speciesCurrAbs
 species= electrons
-ptclAbsorbers= anode
+ptclAbsorbers= diodeabsorber
 </History>
 
 
